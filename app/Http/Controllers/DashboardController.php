@@ -16,7 +16,7 @@ class DashboardController extends Controller
         $expenses = Expense::where('user_id', $userId)->get();
         $categories = Category::all();
         $budgetRecord = Budget::where('user_id', $userId)->first();
-        $budget = $budgetRecord ? $budgetRecord->amount : 0; // Проверка на наличие бюджета
+        $budget = $budgetRecord ? $budgetRecord : (object)['amount' => 0, 'period' => 'monthly'];
 
         $categoryData = [];
         foreach ($categories as $category) {
@@ -24,6 +24,38 @@ class DashboardController extends Controller
             $categoryData[$category->name] = $categoryExpenses;
         }
 
-        return view('dashboard', compact('categoryData', 'budget'));
+        return view('dashboard', compact('categoryData', 'budget', 'expenses'));
+    }
+
+    public function getYearlyExpenses()
+    {
+        $userId = Auth::id();
+        $startOfYear = now()->startOfYear();
+        $endOfYear = now()->endOfYear();
+        $expenses = Expense::with('category')
+            ->where('user_id', $userId)
+            ->whereBetween('date', [$startOfYear, $endOfYear])
+            ->get();
+
+        $budgetRecord = Budget::where('user_id', $userId)->where('period', 'yearly')->first();
+        $budget = $budgetRecord ? $budgetRecord : (object)['amount' => 0, 'period' => 'yearly'];
+
+        return response()->json(['expenses' => $expenses, 'budget' => $budget]);
+    }
+
+    public function getMonthlyExpenses()
+    {
+        $userId = Auth::id();
+        $startOfMonth = now()->startOfMonth();
+        $endOfMonth = now()->endOfMonth();
+        $expenses = Expense::with('category')
+            ->where('user_id', $userId)
+            ->whereBetween('date', [$startOfMonth, $endOfMonth])
+            ->get();
+
+        $budgetRecord = Budget::where('user_id', $userId)->where('period', 'monthly')->first();
+        $budget = $budgetRecord ? $budgetRecord : (object)['amount' => 0, 'period' => 'monthly'];
+
+        return response()->json(['expenses' => $expenses, 'budget' => $budget]);
     }
 }
