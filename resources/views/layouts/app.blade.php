@@ -32,5 +32,7 @@
         @yield('content')
     </main>
 </div>
+
+@stack('scripts') <!-- Добавьте эту строку для подключения скриптов -->
 </body>
 </html>
