@@ -7,9 +7,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             @include('components.expenses-chart')
             @include('components.expenses-table')
-            @include('components.categories-table')
             @include('components.budgets-table')
-            @include('components.category-list')
         </div>
     </div>
 @endsection
@@ -46,10 +44,12 @@
             console.log('Initial Category Data:', categoryData); // Проверка данных категорий
             console.log('Type of Category Data:', typeof categoryData);
 
-            // Преобразование бюджета из строки в число
-            const budgetAmount = parseFloat(budget);
+            // Извлечение значения amount и period из объекта budget
+            const budgetAmount = parseFloat(budget.amount);
+            const budgetPeriod = budget.period;
 
             console.log('Budget Amount:', budgetAmount); // Проверка значения amount
+            console.log('Budget Period:', budgetPeriod); // Проверка значения period
 
             const labels = Object.keys(categoryData);
             const expenses = Object.values(categoryData).map(value => parseFloat(value)); // Преобразуем значения расходов в числа
@@ -99,7 +99,7 @@
                 'rgba(75, 192, 75, 1)' // Зеленый цвет для оставшегося бюджета
             ];
 
-            new Chart(ctx, {
+            let chart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: labels,
@@ -127,6 +127,25 @@
                         }
                     }
                 }
+            });
+
+            // Обработчики событий для кнопок сортировки
+            document.getElementById('sortYear').addEventListener('click', function () {
+                // Логика для сортировки данных за год
+                console.log('Sorting by year');
+                // Обновление данных диаграммы
+                chart.data.labels = labels; // Обновите метки и данные в зависимости от логики сортировки
+                chart.data.datasets[0].data = expenses; // Обновите данные в зависимости от логики сортировки
+                chart.update();
+            });
+
+            document.getElementById('sortMonth').addEventListener('click', function () {
+                // Логика для сортировки данных за месяц
+                console.log('Sorting by month');
+                // Обновление данных диаграммы
+                chart.data.labels = labels; // Обновите метки и данные в зависимости от логики сортировки
+                chart.data.datasets[0].data = expenses; // Обновите данные в зависимости от логики сортировки
+                chart.update();
             });
         });
     </script>

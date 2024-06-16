@@ -2,73 +2,63 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use App\Models\Expense;
 use App\Models\Category;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ExpenseController extends Controller
 {
-    public function index()
-    {
-        $expenses = Expense::where('user_id', Auth::id())->get();
-        return view('expenses.index', compact('expenses'));
-    }
-
+    // Метод для отображения формы создания расхода
     public function create()
     {
-        $categories = Category::all();
+        $categories = [
+            'Food & Drinks', 'Housing', 'Shopping', 'Transport', 'Vehicle', 'Medicine',
+            'Education', 'Travels', 'Entertainment', 'Investments', 'Internet', 'Others'
+        ];
+
         return view('expenses.create', compact('categories'));
     }
 
+    // Метод для сохранения нового расхода
     public function store(Request $request)
     {
         $request->validate([
-            'category_id' => 'required|exists:categories,id',
+            'category' => 'required|string|max:255',
             'amount' => 'required|numeric',
             'date' => 'required|date',
-            'description' => 'nullable|string',
+            'description' => 'nullable|string|max:255',
+            'new_category' => 'nullable|string|max:255'
         ]);
+
+        $categoryName = $request->category;
+        if ($categoryName === 'Others' && $request->filled('new_category')) {
+            $categoryName = $request->new_category;
+            Category::firstOrCreate(['name' => $categoryName]);
+        }
+
+        $category = Category::firstOrCreate(['name' => $categoryName]);
 
         Expense::create([
             'user_id' => Auth::id(),
-            'category_id' => $request->category_id,
+            'category_id' => $category->id,
             'amount' => $request->amount,
             'date' => $request->date,
             'description' => $request->description,
         ]);
 
-        return redirect()->route('dashboard')->with('success', 'Expense added successfully.');
+        return redirect()->route('dashboard')->with('success', 'Расход успешно добавлен.');
     }
 
-    public function edit(Expense $expense)
+    // Метод для удаления расхода
+    public function destroy($id)
     {
-        $categories = Category::all();
-        return view('expenses.edit', compact('expense', 'categories'));
-    }
+        $expense = Expense::find($id);
+        if ($expense && $expense->user_id === Auth::id()) {
+            $expense->delete();
+            return response()->noContent(); // Возвращаем пустой ответ с кодом 204
+        }
 
-    public function update(Request $request, Expense $expense)
-    {
-        $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'amount' => 'required|numeric',
-            'date' => 'required|date',
-            'description' => 'nullable|string',
-        ]);
-
-        $expense->update([
-            'category_id' => $request->category_id,
-            'amount' => $request->amount,
-            'date' => $request->date,
-            'description' => $request->description,
-        ]);
-
-        return redirect()->route('dashboard')->with('success', 'Expense updated successfully.');
-    }
-
-    public function destroy(Expense $expense)
-    {
-        $expense->delete();
-        return redirect()->route('dashboard')->with('success', 'Expense deleted successfully.');
+        return response()->json(['error' => 'Expense not found or unauthorized'], 404);
     }
 }

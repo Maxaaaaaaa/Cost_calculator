@@ -14,14 +14,18 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::resource('expenses', ExpenseController::class)->except(['index', 'create', 'show']);
-    Route::resource('categories', CategoryController::class)->except(['index', 'create', 'show']);
-    Route::resource('budgets', BudgetController::class)->except(['index', 'create', 'show']);
+    // Добавляем маршрут для удаления записей о расходах
+    Route::delete('/expenses/{id}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
+
+    // Продолжаем определение остальных маршрутов...
+    Route::resource('expenses', ExpenseController::class)->except(['index', 'show']);
+    Route::resource('categories', CategoryController::class)->except(['index', 'show']);
+    Route::resource('budgets', BudgetController::class)->except(['index', 'show']);
 
     Route::get('expenses/create', [ExpenseController::class, 'create'])->name('expenses.create');
     Route::get('categories/create', [CategoryController::class, 'create'])->name('categories.create');
     Route::get('budgets/create', [BudgetController::class, 'create'])->name('budgets.create');
-});;;
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -29,4 +33,4 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__. '/auth.php';
