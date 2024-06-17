@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
+use App\Models\Income;
 use App\Models\Category;
 use App\Models\Budget;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ class DashboardController extends Controller
     {
         $userId = Auth::id();
         $expenses = Expense::where('user_id', $userId)->get();
+        $incomes = Income::where('user_id', $userId)->get();
         $categories = Category::all();
         $budgetRecord = Budget::where('user_id', $userId)->first();
         $budget = $budgetRecord ? $budgetRecord : (object)['amount' => 0, 'period' => 'monthly'];
@@ -24,7 +26,9 @@ class DashboardController extends Controller
             $categoryData[$category->name] = $categoryExpenses;
         }
 
-        return view('dashboard', compact('categoryData', 'budget', 'expenses'));
+        $totalIncome = $incomes->sum('amount');
+
+        return view('dashboard', compact('categoryData', 'budget', 'expenses', 'totalIncome'));
     }
 
     public function getYearlyExpenses()
@@ -37,10 +41,16 @@ class DashboardController extends Controller
             ->whereBetween('date', [$startOfYear, $endOfYear])
             ->get();
 
+        $incomes = Income::where('user_id', $userId)
+            ->whereBetween('date', [$startOfYear, $endOfYear])
+            ->get();
+
         $budgetRecord = Budget::where('user_id', $userId)->where('period', 'yearly')->first();
         $budget = $budgetRecord ? $budgetRecord : (object)['amount' => 0, 'period' => 'yearly'];
 
-        return response()->json(['expenses' => $expenses, 'budget' => $budget]);
+        $totalIncome = $incomes->sum('amount');
+
+        return response()->json(['expenses' => $expenses, 'budget' => $budget, 'totalIncome' => $totalIncome]);
     }
 
     public function getMonthlyExpenses()
@@ -53,9 +63,67 @@ class DashboardController extends Controller
             ->whereBetween('date', [$startOfMonth, $endOfMonth])
             ->get();
 
+        $incomes = Income::where('user_id', $userId)
+            ->whereBetween('date', [$startOfMonth, $endOfMonth])
+            ->get();
+
         $budgetRecord = Budget::where('user_id', $userId)->where('period', 'monthly')->first();
         $budget = $budgetRecord ? $budgetRecord : (object)['amount' => 0, 'period' => 'monthly'];
 
-        return response()->json(['expenses' => $expenses, 'budget' => $budget]);
+        $totalIncome = $incomes->sum('amount');
+
+        return response()->json(['expenses' => $expenses, 'budget' => $budget, 'totalIncome' => $totalIncome]);
+    }
+
+    public function getExpensesByPeriod(Request $request)
+    {
+        $userId = Auth::id();
+        $period = $request->query('period');
+        $startDate = null;
+        $endDate = null;
+
+        switch ($period) {
+            case 'last-month':
+                $startDate = now()->subMonth()->startOfMonth();
+                $endDate = now()->subMonth()->endOfMonth();
+                break;
+            case 'last-year':
+                $startDate = now()->subYear()->startOfYear();
+                $endDate = now()->subYear()->endOfYear();
+                break;
+            case 'this-week':
+                $startDate = now()->startOfWeek();
+                $endDate = now()->endOfWeek();
+                break;
+            case 'last-week':
+                $startDate = now()->subWeek()->startOfWeek();
+                $endDate = now()->subWeek()->endOfWeek();
+                break;
+            default:
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $period)) {
+                    $startDate = $period;
+                    $endDate = $period;
+                } else {
+                    $startDate = now()->startOfMonth();
+                    $endDate = now()->endOfMonth();
+                }
+                break;
+        }
+
+        $expenses = Expense::with('category')
+            ->where('user_id', $userId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->get();
+
+        $incomes = Income::where('user_id', $userId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->get();
+
+        $budgetRecord = Budget::where('user_id', $userId)->first();
+        $budget = $budgetRecord ? $budgetRecord : (object)['amount' => 0, 'period' => 'monthly'];
+
+        $totalIncome = $incomes->sum('amount');
+
+        return response()->json(['expenses' => $expenses, 'budget' => $budget, 'totalIncome' => $totalIncome]);
     }
 }

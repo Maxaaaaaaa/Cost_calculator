@@ -7,8 +7,6 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             @include('components.expenses-chart')
             @include('components.expenses-table')
-            @include('components.categories-table')
-            @include('components.budgets-table')
         </div>
     </div>
 @endsection
@@ -20,8 +18,9 @@
             const ctx = document.getElementById('expensesChart').getContext('2d');
             let categoryData = @json($categoryData);
             let budget = @json($budget);
+            let totalIncome = @json($totalIncome);
 
-            const budgetAmount = parseFloat(budget.amount);
+            const budgetAmount = parseFloat(budget.amount) + parseFloat(totalIncome);
             const labels = Object.keys(categoryData);
             const expenses = Object.values(categoryData).map(value => parseFloat(value));
             const totalExpenses = expenses.reduce((sum, value) => sum + value, 0);
@@ -57,7 +56,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Расходы по категориям',
+                        label: 'Expenses by Category',
                         data: expenses,
                         backgroundColor: backgroundColors,
                         borderColor: borderColors,
@@ -87,7 +86,7 @@
                 fetch('/dashboard/yearly-expenses')
                     .then(response => response.json())
                     .then(data => {
-                        updateChart(data.expenses, data.budget);
+                        updateChart(data.expenses, data.budget, data.totalIncome);
                     });
             });
 
@@ -96,11 +95,20 @@
                 fetch('/dashboard/monthly-expenses')
                     .then(response => response.json())
                     .then(data => {
-                        updateChart(data.expenses, data.budget);
+                        updateChart(data.expenses, data.budget, data.totalIncome);
                     });
             });
 
-            function updateChart(expenses, budget) {
+            function fetchData(period) {
+                console.log('Fetching data for period:', period);
+                fetch(`/dashboard/expenses?period=${period}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        updateChart(data.expenses, data.budget, data.totalIncome);
+                    });
+            }
+
+            function updateChart(expenses, budget, totalIncome) {
                 let filteredExpenses = {};
 
                 for (const expense of expenses) {
@@ -114,7 +122,7 @@
                 const labels = Object.keys(filteredExpenses);
                 const expensesData = Object.values(filteredExpenses);
 
-                const budgetAmount = parseFloat(budget.amount);
+                const budgetAmount = parseFloat(budget.amount) + parseFloat(totalIncome);
                 const totalExpenses = expensesData.reduce((sum, value) => sum + value, 0);
                 const remainingBudget = budgetAmount - totalExpenses;
 

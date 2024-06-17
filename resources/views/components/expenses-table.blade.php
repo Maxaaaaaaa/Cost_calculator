@@ -1,9 +1,11 @@
 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
     <div class="p-6 text-gray-900 dark:text-gray-100">
-        <h3 class="text-lg font-semibold mb-4">Расходы</h3>
-        <a href="{{ route('expenses.create') }}"
-           class="inline-flex items-center px-4 py-2 bg-blue-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-400 active:bg-blue-600 focus:outline-none focus:border-blue-600 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150 mb-4">
-            Добавить расход
+        <h3 class="text-lg font-semibold mb-4">Expenses/Incomes</h3>
+        <a href="{{ route('expenses.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-400 active:bg-blue-600 focus:outline-none focus:border-blue-600 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150 mb-4">
+            Add Expense
+        </a>
+        <a href="{{ route('incomes.create') }}" class="inline-flex items-center px-4 py-2 bg-green-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-400 active:bg-green-600 focus:outline-none focus:border-green-600 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150 mb-4">
+            Add Income
         </a>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -11,23 +13,23 @@
                 <tr>
                     <th scope="col"
                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Категория
+                        Category
                     </th>
                     <th scope="col"
                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Сумма
+                        Amount
                     </th>
                     <th scope="col"
                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Дата
+                        Date
                     </th>
                     <th scope="col"
                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Описание
+                        Description
                     </th>
                     <th scope="col"
                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Действия
+                        Actions
                     </th>
                 </tr>
                 </thead>
@@ -39,7 +41,18 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ $expense->date }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ $expense->description }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                            <button onclick="deleteExpense({{ $expense->id }})" class="px-4 py-2 bg-red-500 text-white rounded-md">Удалить</button>
+                            <button onclick="deleteExpense({{ $expense->id }})" class="px-4 py-2 bg-red-500 text-white rounded-md">Delete</button>
+                        </td>
+                    </tr>
+                @endforeach
+                @foreach(App\Models\Income::where('user_id', Auth::id())->get() as $income)
+                    <tr id="income-{{ $income->id }}">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{{ $income->category->name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ $income->amount }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ $income->date }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ $income->description }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                            <button onclick="deleteIncome({{ $income->id }})" class="px-4 py-2 bg-red-500 text-white rounded-md">Delete</button>
                         </td>
                     </tr>
                 @endforeach
@@ -52,7 +65,7 @@
 @push('scripts')
     <script>
         function deleteExpense(expenseId) {
-            if (confirm('Вы уверены, что хотите удалить этот расход?')) {
+            if (confirm('Are you sure you want to delete this expense?')) {
                 fetch(`/expenses/${expenseId}`, {
                     method: 'DELETE',
                     headers: {
@@ -64,12 +77,35 @@
                         if (response.ok) {
                             document.getElementById(`expense-${expenseId}`).remove();
                         } else {
-                            alert('Ошибка при удалении расхода.');
+                            alert('Error deleting expense.');
                         }
                     })
                     .catch(error => {
-                        console.error('Ошибка:', error);
-                        alert('Ошибка при удалении расхода.');
+                        console.error('Error:', error);
+                        alert('Error deleting expense.');
+                    });
+            }
+        }
+
+        function deleteIncome(incomeId) {
+            if (confirm('Are you sure you want to delete this income?')) {
+                fetch(`/incomes/${incomeId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            document.getElementById(`income-${incomeId}`).remove();
+                        } else {
+                            alert('Error deleting income.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error deleting income.');
                     });
             }
         }
