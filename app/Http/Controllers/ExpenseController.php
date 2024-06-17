@@ -11,7 +11,7 @@ class ExpenseController extends Controller
 {
     public function create()
     {
-        $categories = Category::pluck('name');
+        $categories = Category::getExpenseCategories();
         return view('expenses.create', compact('categories'));
     }
 
@@ -24,9 +24,11 @@ class ExpenseController extends Controller
             'description' => 'nullable|string|max:255',
         ]);
 
+        $category = Category::firstOrCreate(['name' => $request->category, 'type' => Category::TYPE_EXPENSE]);
+
         $expense = new Expense();
         $expense->user_id = Auth::id();
-        $expense->category_id = Category::where('name', $request->category)->first()->id;
+        $expense->category_id = $category->id;
         $expense->amount = $request->amount;
         $expense->date = $request->date;
         $expense->description = $request->description;
