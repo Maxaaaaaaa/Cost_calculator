@@ -73,7 +73,7 @@
                         tooltip: {
                             callbacks: {
                                 label: function (tooltipItem) {
-                                    return tooltipItem.label + ': ' + tooltipItem.raw + ' руб.';
+                                    return tooltipItem.label + ': ' + tooltipItem.raw + ' zł.';
                                 }
                             }
                         }
